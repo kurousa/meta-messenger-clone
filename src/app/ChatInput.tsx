@@ -3,9 +3,13 @@
 import React, { FormEvent, useState } from 'react'
 import { Message } from 'typings';
 import { v4 as uuid } from 'uuid';
+import useSWR from 'swr';
+import fetcher from '@/utils/fetchMessages';
 
 function ChatInput() {
   const [input, setInput] = useState("");
+  const { data: messages, error, mutate } = useSWR('/api/getMessages', fetcher);
+
   const addMessage = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input) return;
@@ -23,7 +27,10 @@ function ChatInput() {
       email: 'example@example.com'
     };
 
-    await uploadMessageToUpstash(message);
+    await mutate(uploadMessageToUpstash(message), {
+      optimisticData: [message, ...messages!],
+      rollbackOnError: true,
+    });
   }
 
   const uploadMessageToUpstash = async (message: Message) => {
@@ -38,7 +45,8 @@ function ChatInput() {
     });
 
     const data = await res.json();
-    console.log("message added==>", data);
+    return [data.message, ...messages!]
+
   };
 
 
