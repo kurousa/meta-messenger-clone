@@ -1,4 +1,5 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
+import { serverPusher } from "@/lib/pusher";
 import redis from "@/lib/redis";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Message } from "typings";
@@ -29,6 +30,9 @@ export default async function handler(
   }
 
   await redis.hset('messages', newMessage.id, JSON.stringify(newMessage));
+
+  // Publish new-message events
+  serverPusher.trigger("messages", 'new-message', newMessage);
 
   res.status(200).json({ message: newMessage });
 }
